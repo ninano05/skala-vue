@@ -6,6 +6,11 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 
+// 폰트 설정
+import '@fontsource/pretendard/400.css'
+import '@fontsource/pretendard/500.css'
+import '@fontsource/pretendard/700.css'
+
 //여기도 잘 건드리지 않는다. -> 뭐 설정할 때 한명이 잠깐 정도
 
 // 최상위 컴포넌트 지정하기
