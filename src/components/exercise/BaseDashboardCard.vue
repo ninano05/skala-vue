@@ -10,15 +10,23 @@
 </template>
 
 <style scoped>
-/* 검색 영역 / 상태 바 / 카드 목록이 공통으로 쓰던 배경 박스 스타일 */
 .dashboard-card {
-  width: 800px;
+  width: 100%;
+  max-width: 800px;
   padding: 10px;
   box-sizing: border-box;
   margin-bottom: 20px;
-
-  background-color: rgb(215, 215, 253);
-  border: 1px solid lightgray;
+  background: linear-gradient(135deg, #e5dfff 0%, #dad2fa 55%, #d4c8ff 100%);
+  border: 1px solid #ecdbff;
   border-radius: 10px;
+  box-shadow: 0 8px 18px rgba(139, 92, 246, 0.12);
+}
+
+@media (max-width: 600px) {
+  .dashboard-card {
+    padding: 8px;
+    margin-bottom: 14px;
+    border-radius: 8px;
+  }
 }
 </style>

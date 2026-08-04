@@ -88,26 +88,24 @@ defineProps({
 /* ===========================
    컨테이너
 =========================== */
-
 .img-container {
   position: relative;
   width: 240px;
   height: 120px;
+  margin: 0 auto;
+  align-self: center;
   overflow: hidden;
   border-radius: 10px;
   box-sizing: border-box;
   background: linear-gradient(to bottom, #87ceeb, #e8f7ff);
   transition: background 0.4s ease;
 }
-
 .img-container.sunny {
   background: linear-gradient(to bottom, #53c3ff, #fff3ad);
 }
-
 .img-container.rainy {
   background: linear-gradient(to bottom, #657785, #bcc5cc);
 }
-
 .img-container.cloudy {
   background: linear-gradient(to bottom, #aeb8c0, #eceff2);
 }
@@ -115,29 +113,22 @@ defineProps({
 /* ===========================
    해
 =========================== */
-
 .sun {
   position: absolute;
   top: 35px;
   left: 28px;
-
   width: 38px;
   height: 38px;
-
   border-radius: 50%;
   background: #ffd93d;
-
   box-shadow: 0 0 18px #ffd93d;
-
   animation: sunPulse 2s ease-in-out infinite alternate;
 }
-
 .sunny .sun {
   animation:
     sunPulse 1.2s ease-in-out infinite alternate,
     sunRotate 10s linear infinite;
 }
-
 .sun-ray {
   position: absolute;
 
@@ -150,7 +141,6 @@ defineProps({
   margin-left: -1.5px;
   margin-top: -27px;
 }
-
 .sun-ray::before,
 .sun-ray::after {
   content: '';
@@ -164,11 +154,9 @@ defineProps({
 
   background: #ffd93d;
 }
-
 .sun-ray::before {
   top: 0;
 }
-
 .sun-ray::after {
   bottom: 0;
 }
@@ -178,7 +166,6 @@ defineProps({
     transform: scale(1);
     box-shadow: 0 0 15px #ffd93d;
   }
-
   to {
     transform: scale(1.1);
     box-shadow: 0 0 28px #ffd93d;
@@ -189,7 +176,6 @@ defineProps({
   from {
     rotate: 0deg;
   }
-
   to {
     rotate: 360deg;
   }
@@ -198,7 +184,6 @@ defineProps({
 /* ===========================
    공통 구름
 =========================== */
-
 .cloud {
   position: absolute;
 
