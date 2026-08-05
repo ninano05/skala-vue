@@ -32,7 +32,9 @@ import VueText from '@/components/practice/basic/VueText.vue'
 
 <template>
   <div class="practice-container">
-    <h1>1일차 Vue practice 실습</h1>
+    <br />
+    <p>실습 코드를 확인하기 위한 페이지로 반응형이 아닙니다.</p>
+    <p>(모바일 접근x)</p>
 
     <SampleOne></SampleOne>
     <SampleTwo></SampleTwo>

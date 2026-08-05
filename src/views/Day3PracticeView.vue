@@ -8,18 +8,17 @@ import EcmaScript from '../components/practice/library/EcmaScript.vue'
 
 <template>
   <div class="practice-container">
+    <br />
+    <p>실습 코드를 확인하기 위한 페이지로 반응형이 아닙니다.</p>
+    <p>(모바일 접근x)</p>
     <h1>1. Store</h1>
-    <hr />
     <StoreCounter />
     <h1>2. Axios</h1>
-    <hr />
     <AxiosWeather />
     <AxiosJson />
     <h1>3. Element Plus</h1>
-    <hr />
     <ElementPlus />
     <h1>4. Modern JavaScript</h1>
-    <hr />
     <EcmaScript />
   </div>
 </template>

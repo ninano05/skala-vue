@@ -23,12 +23,13 @@ import SlotScopedParent from '@/components/practice/component/SlotScopedParent.v
 
 <template>
   <div class="practice-container">
+    <br />
+    <p>실습 코드를 확인하기 위한 페이지로 반응형이 아닙니다.</p>
+    <p>(모바일 접근x)</p>
     <h1>1. Reactive State</h1>
-    <hr />
     <ReactiveRef />
     <ReactiveReactive />
     <h1>2. Computed & Watchers</h1>
-    <hr />
     <ComputedBasic />
     <WatchersBasic />
     <WatchersMulti />
@@ -38,14 +39,11 @@ import SlotScopedParent from '@/components/practice/component/SlotScopedParent.v
     <WatchersReactiveArray />
     <WatchersWatchEffect />
     <h1>3. Component Lifecycle</h1>
-    <hr />
     <LifecycleParent />
     <LifecycleChild />
     <h1>4. Props & Emits</h1>
-    <hr />
     <PropsEmitsParent />
     <h1>5. Component Slot</h1>
-    <hr />
     <SlotDefaultParent />
     <SlotNamedParent />
     <SlotScopedParent />
