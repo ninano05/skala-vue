@@ -937,7 +937,8 @@ h1 {
     font-size: 14px;
   }
 
-  button {
+  /* 별 버튼까지 잡히지 않도록 이전 페이지 버튼만 지정한다 */
+  .back-btn {
     width: 100%;
     margin-top: 24px;
   }

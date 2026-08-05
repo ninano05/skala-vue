@@ -220,6 +220,9 @@ const standardTemp = computed(() => {
   border-radius: 10px;
   background: linear-gradient(135deg, #efe1ff, #ddd6ff);
   /* background-color: rgb(215, 215, 253); */
+  /* iOS Safari는 color가 없으면 버튼 글자를 시스템 강조색(파랑)으로 그린다 */
+  color: black;
+  font-family: inherit;
   font-weight: bold;
 
   transition:

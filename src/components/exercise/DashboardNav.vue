@@ -63,6 +63,8 @@ const goUmbrella = () => {
   border: 1px solid #c4b5fd;
   border-radius: 10px;
   background: white;
+  /* iOS Safari는 color가 없으면 버튼 글자를 시스템 강조색(파랑)으로 그린다 */
+  color: black;
   font-family: inherit;
   cursor: pointer;
   transition: 0.2s;
