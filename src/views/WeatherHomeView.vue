@@ -200,15 +200,26 @@ const detail = (city) => {
   })
 }
 
+// 스크롤 목적지를 계산하기 위한 화면 최상단 컨테이너
+const containerRef = ref(null)
+
 // WeatherCard의 select-card 이벤트 핸들러 (현재 선택 도시 업데이트)
-// 선택하면 SearchBar 옆 애니메이션이 바뀌므로, 그 변화가 보이도록 화면을 맨 위로 올린다
+// 선택하면 SearchBar 옆 애니메이션이 바뀌므로, 그 변화가 보이도록 화면을 위로 올린다
 const selectCity = (city) => {
   selectedCity.value = city.name
   selectedWeather.value = city.status
 
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-  window.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' })
+  // 헤더가 세로로 길어지는 폭(850px 이하)에서는 헤더까지 올리면 화면을 많이 낭비하므로
+  // 헤더 바로 아래(내용 시작점)까지만 올린다
+  const isCompactHeader = window.matchMedia('(max-width: 850px)').matches
+  const top =
+    isCompactHeader && containerRef.value
+      ? containerRef.value.getBoundingClientRect().top + window.scrollY
+      : 0
+
+  window.scrollTo({ top, behavior: prefersReducedMotion ? 'auto' : 'smooth' })
 }
 
 // ===== 검색어 자동완성 =====
@@ -402,7 +413,7 @@ watchEffect(() => {
 </script>
 
 <template>
-  <div class="weather-container">
+  <div ref="containerRef" class="weather-container">
     <!-- 최초 진입 로딩 중에는 화면 전체를 로딩 문구로 대체한다 -->
     <p v-if="isInitialLoading" class="loading-text">날씨 정보를 불러오는 중입니다...</p>
 
