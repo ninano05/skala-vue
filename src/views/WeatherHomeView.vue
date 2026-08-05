@@ -196,6 +196,7 @@ const detail = (city) => {
     query: {
       lat: city.lat,
       lon: city.lon,
+      id: city.id, // 상세 페이지에서 즐겨찾기 상태를 같은 기준으로 판단하기 위해 함께 넘긴다
     },
   })
 }
@@ -397,6 +398,9 @@ const selectedCityInfo = computed(() => {
   return `${selectedCity.value}이(가) 선택되었습니다.`
 })
 
+// 도시명만 굵게 표시하기 위해, 선택 상태일 때는 문구를 나눠서 렌더한다
+const hasSelectedCity = computed(() => !isLoading.value && selectedCity.value !== '')
+
 // 상태바 문구 변화시 콘솔 찍기
 watch(selectedCityInfo, (newValue, oldValue) => {
   console.log(`[Watch 감지] 상태 바 문구가 업데이트 되었습니다 -> ${newValue}`)
@@ -441,7 +445,11 @@ watchEffect(() => {
       <!-- 선택 도시 현황 상태 바 -->
       <BaseDashboardCard>
         <div class="status-bar">
-          <p>{{ selectedCityInfo }}</p>
+          <p v-if="hasSelectedCity">
+            <strong>{{ selectedCity }}</strong
+            >이(가) 선택되었습니다.
+          </p>
+          <p v-else>{{ selectedCityInfo }}</p>
         </div>
       </BaseDashboardCard>
 
@@ -531,6 +539,11 @@ body {
 }
 
 /* 상태 바 내부 레이아웃 */
+/* base.css가 모든 요소의 font-weight를 normal로 초기화하므로 굵기를 직접 지정한다 */
+.status-bar strong {
+  font-weight: 700;
+}
+
 .status-bar {
   display: flex;
   align-items: center;

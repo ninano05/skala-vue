@@ -146,7 +146,7 @@ const standardTemp = computed(() => {
   box-shadow: 0 0 0 3px rgba(85, 85, 230, 0.15);
 }
 .region-title {
-  padding-right: 28px; /* 우측 상단 별 버튼과 글자가 겹치지 않도록 */
+  padding-right: 36px; /* 우측 상단 별 버튼과 글자가 겹치지 않도록 */
   font-weight: bold;
   font-size: 18px;
 }
@@ -154,13 +154,20 @@ const standardTemp = computed(() => {
 /* 즐겨찾기 별 버튼 */
 .favorite-btn {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  /* 카드 padding과 맞춰 내용 라인에 정렬한다 */
+  top: 15px;
+  right: 15px;
+
+  /* 버튼 기본 패딩이 남으면 별(1.125em)이 밀려 그려지므로 직접 가운데 정렬한다 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
   width: 28px;
   height: 28px;
 
   border: none;
+  padding: 0;
   border-radius: 50%;
   background-color: transparent;
 

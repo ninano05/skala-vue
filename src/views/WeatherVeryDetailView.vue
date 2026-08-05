@@ -12,9 +12,11 @@ import {
   faSun,
   faCloudSun,
   faCloud,
+  faStar,
 } from '@fortawesome/free-solid-svg-icons'
 import DashboardNav from '@/components/exercise/DashboardNav.vue'
 import { useConfigStore } from '@/stores/configStore'
+import { useFavoriteStore } from '@/stores/favoriteStore'
 import { getCurrentWeatherByCoords } from '@/api/weather'
 
 const route = useRoute()
@@ -25,6 +27,7 @@ const configStore = useConfigStore()
 const cityName = ref('')
 const weatherData = ref(null) // API 원본 응답 (상세 항목을 그대로 활용)
 const isLoading = ref(true)
+const coords = ref({ lat: 0, lon: 0 })
 
 onMounted(async () => {
   const name = route.params.cityName
@@ -38,6 +41,7 @@ onMounted(async () => {
 
   try {
     cityName.value = name
+    coords.value = { lat, lon }
     weatherData.value = await getCurrentWeatherByCoords(lat, lon)
   } catch (error) {
     // 좌표 조회 실패
@@ -111,6 +115,24 @@ const windDirection = computed(() => {
 
 // 최근 1시간 강수량 (비가 올 때만 응답에 포함됨)
 const rainVolume = computed(() => weatherData.value.rain?.['1h'] ?? null)
+
+// ===== 즐겨찾기 =====
+const favoriteStore = useFavoriteStore()
+
+// 홈 카드와 같은 기준으로 판단하도록 id를 쿼리로 받고,
+// 주소로 직접 들어와 id가 없으면 좌표로 만든 id를 쓴다 (자동완성 후보와 동일한 규칙)
+const cityId = computed(() => route.query.id ?? `${coords.value.lat}_${coords.value.lon}`)
+
+const isFavorite = computed(() => favoriteStore.isFavorite(cityId.value))
+
+const toggleFavorite = () => {
+  favoriteStore.toggleFavorite({
+    id: cityId.value,
+    name: cityName.value,
+    lat: coords.value.lat,
+    lon: coords.value.lon,
+  })
+}
 </script>
 
 <template>
@@ -174,6 +196,17 @@ const rainVolume = computed(() => weatherData.value.rain?.['1h'] ?? null)
             ></span>
           </template>
         </div>
+
+        <!-- 즐겨찾기 별 (카드와 같은 동작) -->
+        <button
+          type="button"
+          class="favorite-btn"
+          :class="{ active: isFavorite }"
+          :title="isFavorite ? '즐겨찾기 해제' : '즐겨찾기 추가'"
+          @click="toggleFavorite"
+        >
+          <FontAwesomeIcon :icon="faStar" />
+        </button>
 
         <div class="widget-body">
           <p class="widget-city">{{ cityName }}</p>
@@ -260,7 +293,7 @@ const rainVolume = computed(() => weatherData.value.rain?.['1h'] ?? null)
         </section>
       </div>
 
-      <button type="button" @click="router.back()">이전 페이지</button>
+      <button type="button" class="back-btn" @click="router.back()">이전 페이지</button>
     </div>
 
     <p v-else-if="isLoading" class="loading-text">날씨 정보를 불러오는 중입니다...</p>
@@ -561,6 +594,50 @@ h1 {
   }
 }
 
+/* 즐겨찾기 별 버튼 (위젯 우측 상단) */
+.favorite-btn {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 2;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 40px;
+  height: 40px;
+
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(8px);
+
+  color: rgba(70, 70, 80, 0.35);
+  font-size: 20px;
+  cursor: pointer;
+
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.favorite-btn:hover {
+  background: rgba(255, 255, 255, 0.7);
+  transform: scale(1.1);
+}
+
+.favorite-btn.active {
+  color: #f5b301;
+}
+
+.favorite-btn:focus-visible {
+  outline: 3px solid rgba(196, 181, 253, 0.65);
+  outline-offset: 3px;
+}
+
 /* 배경 연출 위에 올라가는 실제 내용 */
 .widget-body {
   position: relative;
@@ -736,8 +813,8 @@ h1 {
   content: '';
 }
 
-/* 이전 페이지 버튼 */
-button {
+/* 이전 페이지 버튼 (별 버튼에 적용되지 않도록 클래스로 한정한다) */
+.back-btn {
   display: block;
   min-width: 150px;
   height: 44px;
@@ -758,17 +835,17 @@ button {
     filter 0.2s ease;
 }
 
-button:hover {
+.back-btn:hover {
   transform: translateY(-2px);
   filter: brightness(1.03);
   box-shadow: 0 14px 28px rgba(151, 132, 180, 0.22);
 }
 
-button:active {
+.back-btn:active {
   transform: translateY(0);
 }
 
-button:focus-visible {
+.back-btn:focus-visible {
   outline: 3px solid rgba(196, 181, 253, 0.45);
   outline-offset: 4px;
 }
@@ -860,7 +937,7 @@ button:focus-visible {
     font-size: 14px;
   }
 
-  button {
+  .back-btn {
     width: 100%;
     margin-top: 24px;
   }
