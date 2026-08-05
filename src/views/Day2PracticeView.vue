@@ -1,16 +1,15 @@
 <!--2일차 실습 View-->
-<!-- <script setup>
-import ComputedBasic from '../components/practice/composition/ComputedBasic.vue'
-import ReactiveRef from '../components/practice/composition/ReactiveRef.vue'
+<script setup>
+// import ComputedBasic from '../components/practice/composition/ComputedBasic.vue'
+// import ReactiveRef from '../components/practice/composition/ReactiveRef.vue'
 
-import LifecycleChild from '../components/practice/component/LifecycleChild.vue'
-import LifecycleParent from '../components/practice/component/LifecycleParent.vue'
+// import LifecycleChild from '../components/practice/component/LifecycleChild.vue'
+// import LifecycleParent from '../components/practice/component/LifecycleParent.vue'
 </script>
-
 
 <template>
   <div class="practice-container">
-    <h1>1. Reactive State</h1>
+    <!-- <h1>1. Reactive State</h1>
     <hr />
     <ReactiveRef />
     <ReactiveReactive />
@@ -34,9 +33,9 @@ import LifecycleParent from '../components/practice/component/LifecycleParent.vu
     <hr />
     <SlotDefaultParent />
     <SlotNamedParent />
-    <SlotScopedParent />
+    <SlotScopedParent /> -->
   </div>
-</template> -->
+</template>
 
 <style>
 /* ⚠️ 외부 스타일 파일(예: 버튼 디자인 뭉치)을 이 방 안으로 쏙 가리켜 가져옵니다 */
