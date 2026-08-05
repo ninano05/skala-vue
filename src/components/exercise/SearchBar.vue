@@ -280,7 +280,8 @@ h3 {
   }
   .search-input {
     height: 40px;
-    font-size: 15px;
+    /* 16px 미만이면 iOS Safari가 포커스 시 화면을 자동 확대하므로 16px을 유지한다 */
+    font-size: 16px;
   }
   #search-title {
     font-size: 17px;
