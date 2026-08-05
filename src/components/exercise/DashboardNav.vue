@@ -33,9 +33,7 @@ const goUmbrella = () => {
 
 <template>
   <nav class="dashboard-nav">
-    <button :class="{ active: route.name === 'WeatherHomeView' }" @click="goHome">
-      Weather Home
-    </button>
+    <button :class="{ active: route.name === 'WeatherHomeView' }" @click="goHome">Home</button>
 
     <button :class="{ active: route.name === 'WeatherAboutView' }" @click="goAbout">About</button>
 
