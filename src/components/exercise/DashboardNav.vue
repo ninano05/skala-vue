@@ -1,5 +1,7 @@
 <script setup>
 import { useRoute, useRouter } from 'vue-router'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { faUmbrella } from '@fortawesome/free-solid-svg-icons'
 import { useHomeResetStore } from '@/stores/homeResetStore'
 
 const route = useRoute()
@@ -21,6 +23,12 @@ const goAbout = () => {
     router.push({ name: 'WeatherAboutView' })
   }
 }
+
+const goUmbrella = () => {
+  if (route.name !== 'WeatherUmbrellaView') {
+    router.push({ name: 'WeatherUmbrellaView' })
+  }
+}
 </script>
 
 <template>
@@ -30,6 +38,11 @@ const goAbout = () => {
     </button>
 
     <button :class="{ active: route.name === 'WeatherAboutView' }" @click="goAbout">About</button>
+
+    <button :class="{ active: route.name === 'WeatherUmbrellaView' }" @click="goUmbrella">
+      <FontAwesomeIcon :icon="faUmbrella" />
+      rain
+    </button>
   </nav>
 </template>
 
@@ -42,6 +55,10 @@ const goAbout = () => {
   margin: 0 auto 20px;
 }
 .dashboard-nav button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+
   padding: 10px 18px;
   border: 1px solid #c4b5fd;
   border-radius: 10px;

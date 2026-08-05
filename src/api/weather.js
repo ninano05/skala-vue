@@ -113,6 +113,21 @@ export const searchCities = async (keyword) => {
   })
 }
 
+// 위도/경도로 5일/3시간 예보 조회 (슬롯마다 pop = 강수 확률이 들어있다)
+export const getForecastByCoords = async (lat, lon) => {
+  const response = await axios.get(`${BASE_URL}/forecast`, {
+    params: {
+      lat,
+      lon,
+      appid: API_KEY,
+      units: 'metric',
+      lang: 'kr',
+    },
+  })
+
+  return response.data
+}
+
 // 위도/경도로 현재 날씨 조회 (한글 지명처럼 q 파라미터로 못 찾는 경우 사용)
 export const getCurrentWeatherByCoords = async (lat, lon) => {
   const response = await axios.get(`${BASE_URL}/weather`, {

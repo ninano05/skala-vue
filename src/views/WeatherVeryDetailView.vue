@@ -739,7 +739,7 @@ h1 {
   gap: 15px;
   padding: 15px 15px;
   border: 1px solid rgba(196, 181, 253, 0.45);
-  border-radius: 22px;
+  border-radius: 15px;
   box-sizing: border-box;
   background: linear-gradient(135deg, #f3e8ff, #d9d0ff);
   box-shadow:
@@ -772,7 +772,7 @@ h1 {
   margin: 0px;
   padding: 12px 16px;
   border: 1px solid rgba(233, 213, 255, 0.55);
-  border-radius: 14px;
+  border-radius: 13px;
   box-sizing: border-box;
   color: black;
   font-size: 16px;
@@ -821,7 +821,7 @@ h1 {
   margin: 30px auto 0;
   padding: 0 24px;
   border: 1px solid rgba(196, 181, 253, 0.65);
-  border-radius: 14px;
+  border-radius: 10px;
   color: black;
   font-family: inherit;
   font-size: 15px;
@@ -937,7 +937,7 @@ h1 {
     font-size: 14px;
   }
 
-  .back-btn {
+  button {
     width: 100%;
     margin-top: 24px;
   }
