@@ -28,6 +28,15 @@ const emit = defineEmits(['update-query', 'search-city', 'select-suggestion'])
 const isOpen = ref(false)
 const activeIndex = ref(-1)
 const listRef = ref(null)
+const inputRef = ref(null)
+
+// 모바일에서 검색이 끝나면 가상 키보드가 남지 않도록 포커스를 해제한다
+// 마우스 환경에서는 포커스를 유지하는 편이 이어서 입력하기 좋으므로 터치 기기에서만 적용
+const blurOnTouchDevice = () => {
+  if (!window.matchMedia('(pointer: coarse)').matches) return
+
+  inputRef.value?.blur()
+}
 
 // 방향키로 이동한 항목이 목록 밖으로 벗어나면 목록만 스크롤한다 (페이지는 움직이지 않게)
 const scrollActiveIntoView = async () => {
@@ -57,6 +66,7 @@ const closeList = () => {
 
 const select = (city) => {
   closeList()
+  blurOnTouchDevice()
   emit('select-suggestion', city)
 }
 
@@ -84,6 +94,7 @@ const onKeydown = (event) => {
   // 목록이 닫혀 있거나 후보가 없으면 기존 Enter 검색 동작을 그대로 사용한다
   if (!isOpen.value || props.suggestions.length === 0) {
     if (event.key === 'Enter') {
+      blurOnTouchDevice()
       emit('search-city')
     }
     return
@@ -113,6 +124,7 @@ const onKeydown = (event) => {
     }
 
     closeList()
+    blurOnTouchDevice()
     emit('search-city')
   }
 }
@@ -132,6 +144,7 @@ const onKeydown = (event) => {
     <!-- props는 직접 수정하지 않고 :value 로 표시 + @input 으로 이벤트만 올려보낸다 -->
     <div class="search-input-wrapper">
       <input
+        ref="inputRef"
         type="text"
         class="search-input"
         :value="keyword"
