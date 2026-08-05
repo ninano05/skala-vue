@@ -1,22 +1,30 @@
 <script setup>
-import { ref, computed, watch, watchEffect, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { ref, computed, watch, watchEffect, onMounted, onUnmounted, onActivated } from 'vue'
+import { useRouter } from 'vue-router'
 import BaseDashboardCard from '../components/exercise/BaseDashboardCard.vue'
+import DashboardNav from '../components/exercise/DashboardNav.vue'
 import SearchBar from '../components/exercise/SearchBar.vue'
 import WeatherCard from '../components/exercise/WeatherCard.vue'
 import WeatherAnimation from '../components/exercise/WeatherAnimation.vue'
-import { getCurrentWeather, geocodeCity, getCurrentWeatherByCoords } from '@/api/weather'
+import {
+  getCurrentWeather,
+  geocodeCity,
+  getCurrentWeatherByCoords,
+  searchCities,
+} from '@/api/weather'
 import { useFavoriteStore } from '@/stores/favoriteStore'
+import { useHomeResetStore } from '@/stores/homeResetStore'
 
 // 라우터 설정
 const router = useRouter()
-const route = useRoute()
 
 // 반응형 데이터 최상단 부모 소유
 const searchKeyword = ref('')
 const selectedCity = ref('')
 const selectedWeather = ref('')
 const isLoading = ref(false)
+// 최초 진입 로딩 (검색용 isLoading과 분리 - 검색 중에는 화면을 통째로 가리지 않는다)
+const isInitialLoading = ref(true)
 
 // 초기 화면에 보여줄 기본 도시 (query: OpenWeather 조회용, name: 화면 표시용)
 const DEFAULT_CITIES = [
@@ -65,10 +73,64 @@ const loadInitialWeather = async () => {
     console.error('[초기 날씨 조회 실패]', error)
   } finally {
     isLoading.value = false
+    isInitialLoading.value = false
+    lastLoadedAt = Date.now()
   }
 }
 
 onMounted(loadInitialWeather)
+
+// ===== 오래된 날씨 갱신 =====
+// KeepAlive로 홈이 계속 살아있어 화면을 오래 켜두면 데이터가 낡는다
+const REFRESH_INTERVAL = 60 * 60 * 1000 // 1시간이 지나면 다시 조회
+const STALE_CHECK_INTERVAL = 5 * 60 * 1000 // 5분마다 경과 시간만 확인
+
+let lastLoadedAt = 0
+let staleCheckTimer = null
+
+// 검색으로 추가한 도시까지 포함해 현재 목록 그대로 다시 조회한다 (기본 9개로 되돌리지 않도록)
+const refreshWeatherList = async () => {
+  const cities = weatherList.value
+
+  if (cities.length === 0) return
+
+  try {
+    const results = await Promise.all(
+      cities.map((city) => getCurrentWeatherByCoords(city.lat, city.lon)),
+    )
+
+    weatherList.value = results.map((data, index) =>
+      toCityItem(cities[index].id, cities[index].name, data),
+    )
+
+    lastLoadedAt = Date.now()
+  } catch (error) {
+    // 실패하면 기존 값을 그대로 유지하고 다음 확인 때 다시 시도한다
+    console.error('[날씨 갱신 실패]', error)
+  }
+}
+
+const refreshIfStale = () => {
+  if (isInitialLoading.value) return
+  if (document.visibilityState !== 'visible') return // 안 보이는 탭에서는 호출하지 않는다
+  if (Date.now() - lastLoadedAt < REFRESH_INTERVAL) return
+
+  refreshWeatherList()
+  loadFavoriteWeather()
+}
+
+onMounted(() => {
+  document.addEventListener('visibilitychange', refreshIfStale)
+  staleCheckTimer = setInterval(refreshIfStale, STALE_CHECK_INTERVAL)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('visibilitychange', refreshIfStale)
+  clearInterval(staleCheckTimer)
+})
+
+// 상세보기 등에서 돌아왔을 때도 확인한다 (KeepAlive라 재마운트되지 않는다)
+onActivated(refreshIfStale)
 
 // 즐겨찾기
 const favoriteStore = useFavoriteStore()
@@ -110,6 +172,20 @@ const updateQuery = (keyword) => {
   searchKeyword.value = keyword
 }
 
+// 대시보드의 Weather Home 버튼: 검색 상태를 비워 홈 전체 화면으로 되돌린다 (라우팅은 DashboardNav가 담당)
+const resetHome = () => {
+  searchKeyword.value = ''
+  suggestions.value = []
+  selectedCity.value = ''
+  selectedWeather.value = ''
+}
+
+// 상세/About 페이지에서 눌러도 초기화되도록, 스토어의 신호를 받아 처리한다
+// (KeepAlive로 홈이 살아있어 라우팅만으로는 초기화되지 않는다)
+const homeResetStore = useHomeResetStore()
+
+watch(() => homeResetStore.resetToken, resetHome)
+
 // WeatherCard의 click-detail 이벤트 핸들러 -> detailView로 라우팅 (상세보기 버튼)
 const detail = (city) => {
   router.push({
@@ -125,9 +201,105 @@ const detail = (city) => {
 }
 
 // WeatherCard의 select-card 이벤트 핸들러 (현재 선택 도시 업데이트)
+// 선택하면 SearchBar 옆 애니메이션이 바뀌므로, 그 변화가 보이도록 화면을 맨 위로 올린다
 const selectCity = (city) => {
   selectedCity.value = city.name
   selectedWeather.value = city.status
+
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+  window.scrollTo({ top: 0, behavior: prefersReducedMotion ? 'auto' : 'smooth' })
+}
+
+// ===== 검색어 자동완성 =====
+const suggestions = ref([])
+const isSuggestLoading = ref(false)
+
+let debounceTimer = null
+let requestId = 0 // 늦게 도착한 이전 응답이 최신 결과를 덮어쓰지 않도록 구분
+let skipSuggestFetch = false // 후보 선택으로 검색어가 바뀐 경우를 구분
+
+watch(searchKeyword, (keyword) => {
+  clearTimeout(debounceTimer)
+
+  // 후보를 골라서 검색어가 바뀐 경우엔 조회하지 않는다 (이미 고른 도시라 목록이 필요 없음)
+  if (skipSuggestFetch) {
+    skipSuggestFetch = false
+    requestId += 1 // 진행 중이던 조회 결과가 뒤늦게 목록을 되살리지 않도록 무효화
+    suggestions.value = []
+    isSuggestLoading.value = false
+    return
+  }
+
+  const trimmed = keyword.trim()
+
+  if (trimmed === '') {
+    suggestions.value = []
+    isSuggestLoading.value = false
+    return
+  }
+
+  isSuggestLoading.value = true
+
+  // 타이핑할 때마다 API를 호출하지 않도록 입력이 멈춘 뒤에 조회한다
+  debounceTimer = setTimeout(async () => {
+    const currentId = ++requestId
+
+    try {
+      const results = await searchCities(trimmed)
+
+      if (currentId === requestId) {
+        suggestions.value = results
+      }
+    } catch (error) {
+      console.error('[도시 자동완성 조회 실패]', error)
+
+      if (currentId === requestId) {
+        suggestions.value = []
+      }
+    } finally {
+      if (currentId === requestId) {
+        isSuggestLoading.value = false
+      }
+    }
+  }, 300)
+})
+
+onUnmounted(() => clearTimeout(debounceTimer))
+
+// SearchBar의 select-suggestion 이벤트 핸들러 (자동완성 후보 선택)
+const selectSuggestion = async (city) => {
+  suggestions.value = []
+
+  // 선택한 도시명을 검색어로 남겨, 직접 입력 후 Enter를 눌렀을 때와 같이 해당 도시만 보이게 한다
+  if (searchKeyword.value !== city.name) {
+    skipSuggestFetch = true
+    searchKeyword.value = city.name
+  }
+
+  // 이미 목록에 있는 도시면 API 재호출 없이 바로 선택
+  const foundCity = weatherList.value.find((item) => item.name === city.name)
+
+  if (foundCity) {
+    selectedCity.value = foundCity.name
+    selectedWeather.value = foundCity.status
+    return
+  }
+
+  isLoading.value = true
+  try {
+    const data = await getCurrentWeatherByCoords(city.lat, city.lon)
+    const newCity = toCityItem(city.id, city.name, data)
+
+    weatherList.value = [...weatherList.value, newCity]
+    selectedCity.value = newCity.name
+    selectedWeather.value = newCity.status
+  } catch (error) {
+    console.error('[선택 도시 날씨 조회 실패]', error)
+    alert('해당 도시의 날씨를 불러오지 못했습니다.')
+  } finally {
+    isLoading.value = false
+  }
 }
 
 // 검색어가 입력된 상태인지 (검색 중에는 즐겨찾기 섹션을 숨겨 검색 결과에 집중시킨다)
@@ -166,12 +338,31 @@ const searchCity = async () => {
   isLoading.value = true
   try {
     const location = await geocodeCity(keyword)
-    const data = await getCurrentWeatherByCoords(location.lat, location.lon)
-    const newCity = toCityItem(`city_${Date.now()}`, keyword, data)
 
-    weatherList.value = [...weatherList.value, newCity]
-    selectedCity.value = newCity.name
-    selectedWeather.value = newCity.status
+    // 카드에는 입력값이 아니라 API가 돌려준 정식 지명을 쓴다
+    // (지오코딩이 특수문자를 무시하고 매칭하므로 입력값을 그대로 쓰면 '부산광역시!@#'처럼 남는다)
+    const cityName = location.local_names?.ko ?? location.name
+
+    // 정식 지명 기준으로 이미 목록에 있으면 재조회 없이 선택만 한다
+    const existingCity = weatherList.value.find((item) => item.name === cityName)
+
+    if (existingCity) {
+      selectedCity.value = existingCity.name
+      selectedWeather.value = existingCity.status
+    } else {
+      const data = await getCurrentWeatherByCoords(location.lat, location.lon)
+      const newCity = toCityItem(`city_${Date.now()}`, cityName, data)
+
+      weatherList.value = [...weatherList.value, newCity]
+      selectedCity.value = newCity.name
+      selectedWeather.value = newCity.status
+    }
+
+    // 카드 필터(item.name.includes(keyword))가 맞아떨어지도록 검색어도 정식 지명으로 맞춘다
+    if (searchKeyword.value !== cityName) {
+      skipSuggestFetch = true
+      searchKeyword.value = cityName
+    }
   } catch (error) {
     alert('해당 도시는 지원하지 않습니다.')
     selectedCity.value = ''
@@ -192,7 +383,7 @@ const selectedCityInfo = computed(() => {
     return '카드를 클릭하거나 검색해보세요.'
   }
 
-  return `${selectedCity.value}이 선택되었습니다.`
+  return `${selectedCity.value}이(가) 선택되었습니다.`
 })
 
 // 상태바 문구 변화시 콘솔 찍기
@@ -212,53 +403,67 @@ watchEffect(() => {
 
 <template>
   <div class="weather-container">
-    <!--대시보드 네비게이션 -->
-    <nav class="dashboard-nav">
-      <button
-        :class="{ active: route.name === 'WeatherHomeView' }"
-        @click="router.push({ name: 'WeatherHomeView' })"
-      >
-        Weather Home
-      </button>
+    <!-- 최초 진입 로딩 중에는 화면 전체를 로딩 문구로 대체한다 -->
+    <p v-if="isInitialLoading" class="loading-text">날씨 정보를 불러오는 중입니다...</p>
 
-      <button
-        :class="{ active: route.name === 'WeatherAboutView' }"
-        @click="router.push({ name: 'WeatherAboutView' })"
-      >
-        About
-      </button>
-    </nav>
+    <template v-else>
+      <!--대시보드 네비게이션 -->
+      <DashboardNav />
 
-    <h1>과제4: 라우터 적용</h1>
+      <h1>한국 지역별 날씨 검색</h1>
 
-    <!-- 도시 검색: slot 내부에 있지만 부모 스코프에서 컴파일되므로 직접 바인딩/통신 가능 -->
-    <BaseDashboardCard>
-      <div class="search-content-container">
-        <SearchBar :keyword="searchKeyword" @update-query="updateQuery" @search-city="searchCity" />
-        <WeatherAnimation :weather="selectedWeather" />
-      </div>
-    </BaseDashboardCard>
+      <!-- 도시 검색: slot 내부에 있지만 부모 스코프에서 컴파일되므로 직접 바인딩/통신 가능 -->
+      <BaseDashboardCard>
+        <div class="search-content-container">
+          <SearchBar
+            :keyword="searchKeyword"
+            :suggestions="suggestions"
+            :is-suggest-loading="isSuggestLoading"
+            @update-query="updateQuery"
+            @search-city="searchCity"
+            @select-suggestion="selectSuggestion"
+          />
+          <WeatherAnimation :weather="selectedWeather" />
+        </div>
+      </BaseDashboardCard>
 
-    <!-- 선택 도시 현황 상태 바 -->
-    <BaseDashboardCard>
-      <div class="status-bar">
-        <p>{{ selectedCityInfo }}</p>
-      </div>
-    </BaseDashboardCard>
+      <!-- 선택 도시 현황 상태 바 -->
+      <BaseDashboardCard>
+        <div class="status-bar">
+          <p>{{ selectedCityInfo }}</p>
+        </div>
+      </BaseDashboardCard>
 
-    <!-- 즐겨찾기 도시 (전역 스토어에서 가져옴) / 검색 중에는 감춰서 검색 결과에 집중시킨다 -->
-    <template v-if="!isSearching">
-      <h3 class="weather-card-title">즐겨찾기 ({{ favoriteStore.favoriteCount }})</h3>
+      <!-- 즐겨찾기 도시 (전역 스토어에서 가져옴) / 검색 중에는 감춰서 검색 결과에 집중시킨다 -->
+      <template v-if="!isSearching">
+        <h3 class="weather-card-title">즐겨찾기 ({{ favoriteStore.favoriteCount }})</h3>
+        <BaseDashboardCard>
+          <div class="weatherCard-container">
+            <p v-if="!favoriteStore.hasFavorite" class="no-result">
+              카드 우측 상단의 별을 눌러 즐겨찾기에 추가해보세요.
+            </p>
+            <p v-else-if="isFavoriteLoading && favoriteWeatherList.length === 0" class="no-result">
+              즐겨찾기 날씨를 불러오는 중입니다...
+            </p>
+            <WeatherCard
+              v-for="item in favoriteWeatherList"
+              :key="item.id"
+              :city="item"
+              :is-selected="selectedCity === item.name"
+              @select-card="selectCity"
+              @click-detail="detail"
+            />
+          </div>
+        </BaseDashboardCard>
+      </template>
+
+      <!-- 기본 날씨 현황 카드 -->
+      <h3 class="weather-card-title">지역별 날씨 현황</h3>
       <BaseDashboardCard>
         <div class="weatherCard-container">
-          <p v-if="!favoriteStore.hasFavorite" class="no-result">
-            카드 우측 상단의 별을 눌러 즐겨찾기에 추가해보세요.
-          </p>
-          <p v-else-if="isFavoriteLoading && favoriteWeatherList.length === 0" class="no-result">
-            즐겨찾기 날씨를 불러오는 중입니다...
-          </p>
+          <p v-if="filteredWeatherList.length === 0" class="no-result">검색 결과가 없습니다.</p>
           <WeatherCard
-            v-for="item in favoriteWeatherList"
+            v-for="item in filteredWeatherList"
             :key="item.id"
             :city="item"
             :is-selected="selectedCity === item.name"
@@ -268,22 +473,6 @@ watchEffect(() => {
         </div>
       </BaseDashboardCard>
     </template>
-
-    <!-- 기본 날씨 현황 카드 -->
-    <h3 class="weather-card-title">지역별 날씨 현황</h3>
-    <BaseDashboardCard>
-      <div class="weatherCard-container">
-        <p v-if="filteredWeatherList.length === 0" class="no-result">검색 결과가 없습니다.</p>
-        <WeatherCard
-          v-for="item in filteredWeatherList"
-          :key="item.id"
-          :city="item"
-          :is-selected="selectedCity === item.name"
-          @select-card="selectCity"
-          @click-detail="detail"
-        />
-      </div>
-    </BaseDashboardCard>
   </div>
 </template>
 
@@ -302,17 +491,19 @@ body {
   background-color: rgb(245, 245, 255);
   font-family: 'Pretendard', sans-serif;
 }
+/* 카드와 같은 폭을 줘야 가운데로 몰리지 않고 카드 왼쪽 끝에 맞춰진다 */
+/* 글자 시작점은 padding으로 카드 안쪽 여백(10px)과 맞춘다 */
 .weather-container h1 {
-  /* width: 800px; */
+  width: min(800px, 100%);
+  padding-left: 10px;
   text-align: left;
-  margin-left: 10px;
   margin-bottom: 5px;
   font-weight: bold;
 }
 .weather-card-title {
-  /* width: 800px; */
+  width: min(800px, 100%);
+  padding-left: 10px;
   text-align: left;
-  margin-left: 10px;
   margin-bottom: 5px;
   font-weight: bold;
 }
@@ -322,6 +513,9 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding-left: 10px;
+  padding-right: 10px;
+  padding-bottom: 5px;
 }
 
 /* 상태 바 내부 레이아웃 */
@@ -350,32 +544,21 @@ body {
   font-weight: bold;
 }
 
-/* 대시보드 CSS */
-.dashboard-nav {
-  width: 800px;
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-bottom: 20px;
+/* 로딩 문구 (WeatherVeryDetailView와 동일한 스타일) */
+.loading-text {
+  width: fit-content;
+  margin: 180px auto 0;
+  padding: 20px 28px;
+  border: 1px solid rgba(196, 181, 253, 0.5);
+  border-radius: 16px;
+  color: #716779;
+  font-size: 16px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 14px 34px rgba(151, 132, 180, 0.12);
 }
-.dashboard-nav button {
-  padding: 10px 18px;
-  border: 1px solid #c4b5fd;
-  border-radius: 10px;
-  background: white;
-  cursor: pointer;
-  transition: 0.2s;
-}
-.dashboard-nav button:hover {
-  background: #ede9fe;
-}
-.dashboard-nav button.active {
-  background: linear-gradient(135deg, #e9d5ff, #c4b5fd);
-  border-color: #c4b5fd;
-  color: #4c1d95;
-  font-weight: bold;
-  box-shadow: 0 6px 14px rgba(139, 92, 246, 0.25);
-}
+
+/* 대시보드 내비게이션 스타일은 DashboardNav 컴포넌트가 가지고 있다 */
 
 /* 태블릿 */
 @media (max-width: 900px) {
@@ -384,14 +567,9 @@ body {
   }
 
   .weather-container h1,
-  .weather-card-title,
-  .dashboard-nav {
+  .weather-card-title {
     width: 100%;
     max-width: 800px;
-  }
-
-  .dashboard-nav {
-    margin-bottom: 16px;
   }
 
   .weatherCard-container {
@@ -416,19 +594,6 @@ body {
     width: 100%;
     margin: 4px 0 10px;
     font-size: 18px;
-  }
-
-  .dashboard-nav {
-    width: 100%;
-    justify-content: stretch;
-    gap: 8px;
-    margin-bottom: 16px;
-  }
-
-  .dashboard-nav button {
-    flex: 1;
-    padding: 10px 12px;
-    font-size: 14px;
   }
 
   .search-content-container {

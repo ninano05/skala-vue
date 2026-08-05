@@ -1,6 +1,19 @@
 <script setup>
 import { onMounted, ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import {
+  faTemperatureArrowUp,
+  faTemperatureArrowDown,
+  faPersonSwimming,
+  faPersonSkiing,
+  faDroplet,
+  faDropletSlash,
+  faSun,
+  faCloudSun,
+  faCloud,
+} from '@fortawesome/free-solid-svg-icons'
+import DashboardNav from '@/components/exercise/DashboardNav.vue'
 import { useConfigStore } from '@/stores/configStore'
 import { getCurrentWeatherByCoords } from '@/api/weather'
 
@@ -68,6 +81,25 @@ const isNight = computed(() => weatherData.value.weather[0].icon.endsWith('n'))
 const temp = computed(() => convertTemp(weatherData.value.main.temp))
 const feelsLike = computed(() => convertTemp(weatherData.value.main.feels_like))
 
+// ===== 항목별 아이콘 =====
+// 판정은 항상 섭씨 원본값으로 한다 (화씨로 표시 중이어도 기준이 흔들리지 않도록)
+const HOT_STANDARD = 25 // WeatherCard의 더움/선선함 기준과 동일
+const HUMID_STANDARD = 70
+
+const isHot = computed(() => weatherData.value.main.temp >= HOT_STANDARD)
+const isFeelsHot = computed(() => weatherData.value.main.feels_like >= HOT_STANDARD)
+const isHumid = computed(() => weatherData.value.main.humidity >= HUMID_STANDARD)
+
+// 구름량 -> 맑음 / 구름 조금 / 흐림
+const cloudIcon = computed(() => {
+  const clouds = weatherData.value.clouds.all
+
+  if (clouds < 20) return { icon: faSun, color: 'rgb(255, 129, 9)' }
+  if (clouds < 70) return { icon: faCloudSun, color: 'rgb(247, 181, 56)' }
+
+  return { icon: faCloud, color: 'rgb(129, 139, 165)' }
+})
+
 // 풍향(각도) -> 8방위 한글 표기
 const WIND_DIRECTIONS = ['북', '북동', '동', '남동', '남', '남서', '서', '북서']
 
@@ -83,6 +115,9 @@ const rainVolume = computed(() => weatherData.value.rain?.['1h'] ?? null)
 
 <template>
   <div class="detail-container">
+    <!--대시보드 네비게이션 (홈/About과 같은 위치/크기로 보이도록 최상단에 배치) -->
+    <DashboardNav />
+
     <div v-if="weatherData">
       <h1>{{ cityName }}</h1>
 
@@ -153,27 +188,76 @@ const rainVolume = computed(() => weatherData.value.rain?.['1h'] ?? null)
         </div>
       </div>
 
-      <!-- 기온 -->
-      <h2 class="section-title">기온</h2>
-      <div class="weather-detail-card">
-        <p><strong>현재 기온</strong> {{ temp }}{{ unitSymbol }}</p>
-        <p><strong>체감 온도</strong> {{ feelsLike }}{{ unitSymbol }}</p>
-      </div>
+      <!-- 상세 항목: 세 영역을 가로 3열로 배치 -->
+      <div class="detail-sections">
+        <!-- 기온 -->
+        <section>
+          <h2 class="section-title">기온</h2>
+          <div class="weather-detail-card">
+            <p>
+              <strong>현재 기온</strong>
+              <FontAwesomeIcon
+                class="item-icon"
+                :icon="isHot ? faTemperatureArrowUp : faTemperatureArrowDown"
+                :style="{ color: isHot ? 'rgb(225, 51, 51)' : 'rgb(61, 77, 247)' }"
+              />
+              <span class="item-value">{{ temp }}{{ unitSymbol }}</span>
+            </p>
 
-      <!-- 대기 상태 -->
-      <h2 class="section-title">대기 상태</h2>
-      <div class="weather-detail-card">
-        <p><strong>습도</strong> {{ weatherData.main.humidity }}%</p>
-        <p><strong>구름량</strong> {{ weatherData.clouds.all }}%</p>
-        <p v-if="rainVolume !== null"><strong>1시간 강수량</strong> {{ rainVolume }} mm</p>
-      </div>
+            <p>
+              <strong>체감 온도</strong>
+              <FontAwesomeIcon
+                class="item-icon"
+                :icon="isFeelsHot ? faPersonSwimming : faPersonSkiing"
+                :style="{ color: isFeelsHot ? 'rgb(225, 51, 51)' : 'rgb(61, 77, 247)' }"
+              />
+              <span class="item-value">{{ feelsLike }}{{ unitSymbol }}</span>
+            </p>
+          </div>
+        </section>
 
-      <!-- 바람 -->
-      <h2 class="section-title">바람</h2>
-      <div class="weather-detail-card">
-        <p><strong>풍속</strong> {{ weatherData.wind.speed }} m/s</p>
-        <p><strong>풍향</strong> {{ windDirection }} ({{ weatherData.wind.deg }}°)</p>
-        <p v-if="weatherData.wind.gust"><strong>돌풍</strong> {{ weatherData.wind.gust }} m/s</p>
+        <!-- 대기 상태 -->
+        <section>
+          <h2 class="section-title">대기 상태</h2>
+          <div class="weather-detail-card">
+            <p>
+              <strong>습도</strong>
+              <FontAwesomeIcon
+                class="item-icon"
+                :icon="isHumid ? faDroplet : faDropletSlash"
+                :style="{ color: isHumid ? 'rgb(56, 132, 247)' : 'rgb(150, 158, 175)' }"
+              />
+              <span class="item-value">{{ weatherData.main.humidity }}%</span>
+            </p>
+
+            <p>
+              <strong>구름량</strong>
+              <FontAwesomeIcon
+                class="item-icon"
+                :icon="cloudIcon.icon"
+                :style="{ color: cloudIcon.color }"
+              />
+              <span class="item-value">{{ weatherData.clouds.all }}%</span>
+            </p>
+
+            <p v-if="rainVolume !== null">
+              <strong>1시간 강수량</strong>
+              <span class="item-value">{{ rainVolume }} mm</span>
+            </p>
+          </div>
+        </section>
+
+        <!-- 바람 (아래 줄 전체를 차지) -->
+        <section class="wind-section">
+          <h2 class="section-title">바람</h2>
+          <div class="weather-detail-card">
+            <p><strong>풍속</strong> {{ weatherData.wind.speed }} m/s</p>
+            <p><strong>풍향</strong> {{ windDirection }} ({{ weatherData.wind.deg }}°)</p>
+            <p v-if="weatherData.wind.gust">
+              <strong>돌풍</strong> {{ weatherData.wind.gust }} m/s
+            </p>
+          </div>
+        </section>
       </div>
 
       <button type="button" @click="router.back()">이전 페이지</button>
@@ -198,7 +282,8 @@ const rainVolume = computed(() => weatherData.value.rain?.['1h'] ?? null)
 
   min-height: 100vh;
   font-family: 'Pretendard', sans-serif;
-  padding: 56px 24px 80px;
+  /* 위쪽 여백은 홈(.weather-container)과 맞춰 내비가 같은 높이에 오게 한다 */
+  padding: 20px 24px 56px;
   box-sizing: border-box;
   color: var(--text-main);
   background:
@@ -208,12 +293,12 @@ const rainVolume = computed(() => weatherData.value.rain?.['1h'] ?? null)
 }
 
 .detail-container > div {
-  width: min(860px, 100%);
+  width: min(800px, 100%);
   margin: 0 auto;
 }
 
 h1 {
-  margin: 0 0 32px;
+  margin: 0 0 22px;
   color: black;
   font-size: clamp(28px, 4vw, 40px);
   font-weight: 800;
@@ -229,8 +314,8 @@ h1 {
   position: relative;
   overflow: hidden;
 
-  min-height: 270px;
-  padding: 34px 36px;
+  min-height: 210px;
+  padding: 26px 30px;
 
   border: 1px solid rgba(255, 255, 255, 0.9);
   border-radius: 26px;
@@ -344,13 +429,13 @@ h1 {
 }
 
 .cloud-1 {
-  top: 28px;
+  top: 22px;
   width: 200px;
   animation-duration: 26s;
 }
 
 .cloud-2 {
-  top: 104px;
+  top: 84px;
   width: 260px;
   opacity: 0.75;
   animation-duration: 34s;
@@ -358,7 +443,7 @@ h1 {
 }
 
 .cloud-3 {
-  top: 180px;
+  top: 142px;
   width: 170px;
   opacity: 0.6;
   animation-duration: 30s;
@@ -449,19 +534,19 @@ h1 {
 }
 
 .haze-1 {
-  top: 62px;
+  top: 48px;
   animation-duration: 9s;
 }
 
 .haze-2 {
-  top: 130px;
+  top: 100px;
   opacity: 0.8;
   animation-duration: 12s;
   animation-delay: -4s;
 }
 
 .haze-3 {
-  top: 196px;
+  top: 152px;
   opacity: 0.6;
   animation-duration: 15s;
   animation-delay: -8s;
@@ -495,10 +580,10 @@ h1 {
 }
 
 .widget-temp {
-  margin: 12px 0 0;
+  margin: 8px 0 0;
 
   color: black;
-  font-size: clamp(58px, 8vw, 82px);
+  font-size: clamp(48px, 6vw, 66px);
   font-weight: 800;
   line-height: 1;
   letter-spacing: -4px;
@@ -508,23 +593,23 @@ h1 {
 
 .widget-unit {
   margin-left: 4px;
-  font-size: 32px;
+  font-size: 26px;
   font-weight: 600;
   letter-spacing: 0;
   vertical-align: super;
 }
 
 .widget-desc {
-  margin: 8px 0 0;
+  margin: 6px 0 0;
   color: black;
-  font-size: 21px;
+  font-size: 19px;
   font-weight: 700;
 }
 
 .widget-feels {
   width: fit-content;
-  margin: 18px 0 0;
-  padding: 8px 15px;
+  margin: 12px 0 0;
+  padding: 6px 13px;
 
   border: 1px solid rgba(255, 255, 255, 0.8);
   border-radius: 999px;
@@ -548,11 +633,34 @@ h1 {
 }
 
 /* 상세 카드 */
+/* 기온 / 대기 상태는 2열로 나란히, 바람은 그 아래 한 줄 전체 (카드 높이는 각자 내용만큼) */
+.detail-sections {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.wind-section {
+  grid-column: 1 / -1;
+}
+
+/* 바람은 폭이 넓으므로 항목(2~3개)을 한 줄에 가로로 나열한다 */
+.wind-section .weather-detail-card {
+  display: flex;
+  flex-direction: row;
+}
+
+.wind-section .weather-detail-card p {
+  flex: 1;
+}
+
+/* 카드 안 항목은 가로 2열 (항목 안에서는 라벨과 값이 가로로 마주본다) */
 .weather-detail-card {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-  padding: 24px 28px;
+  gap: 15px;
+  padding: 15px 15px;
   border: 1px solid rgba(196, 181, 253, 0.45);
   border-radius: 22px;
   box-sizing: border-box;
@@ -575,13 +683,17 @@ h1 {
     0 6px 16px rgba(151, 132, 180, 0.07);
 }
 
+/* 항목 안은 라벨 -> 아이콘 -> 값 순으로 세로 배치 */
 .weather-detail-card p {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  min-height: 54px;
-  margin: 0;
-  padding: 0 16px;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 112px;
+  margin: 0px;
+  padding: 12px 16px;
   border: 1px solid rgba(233, 213, 255, 0.55);
   border-radius: 14px;
   box-sizing: border-box;
@@ -595,21 +707,30 @@ h1 {
   font-weight: 700;
 }
 
+/* 라벨 / 아이콘 / 값 3열 배치 (아이콘이 없는 항목은 라벨과 값이 양 끝으로 간다) */
+.item-icon {
+  font-size: 28px;
+}
+
+.item-value {
+  white-space: nowrap;
+}
+
 /* 섹션 제목 */
 .section-title {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: 36px 0 14px;
+  margin: 26px 0 10px;
   color: black;
-  font-size: 21px;
+  font-size: 19px;
   font-weight: 800;
   letter-spacing: -0.5px;
 }
 
 .section-title::before {
   width: 7px;
-  height: 22px;
+  height: 19px;
   border-radius: 999px;
   background: linear-gradient(135deg, #e9d5ff, #c4b5fd);
   content: '';
@@ -619,8 +740,8 @@ h1 {
 button {
   display: block;
   min-width: 150px;
-  height: 48px;
-  margin: 42px auto 0;
+  height: 44px;
+  margin: 30px auto 0;
   padding: 0 24px;
   border: 1px solid rgba(196, 181, 253, 0.65);
   border-radius: 14px;
@@ -669,28 +790,33 @@ button:focus-visible {
 /* 태블릿 */
 @media (max-width: 768px) {
   .detail-container {
-    padding: 38px 18px 60px;
+    padding: 20px 18px 44px;
   }
 
   h1 {
-    margin-bottom: 24px;
+    margin-bottom: 18px;
   }
 
   .weather-widget {
-    min-height: 240px;
-    padding: 28px 24px;
+    min-height: 190px;
+    padding: 22px 20px;
+  }
+
+  /* 2열을 유지하기엔 열이 너무 좁아 세로로 쌓는다 */
+  .detail-sections {
+    grid-template-columns: 1fr;
+    gap: 0;
   }
 
   .weather-detail-card {
-    grid-template-columns: 1fr;
-    padding: 20px;
+    padding: 14px;
   }
 }
 
 /* 모바일 */
 @media (max-width: 520px) {
   .detail-container {
-    padding: 28px 14px 48px;
+    padding: 20px 14px 36px;
   }
 
   h1 {
@@ -699,8 +825,8 @@ button:focus-visible {
   }
 
   .weather-widget {
-    min-height: 220px;
-    padding: 24px 20px;
+    min-height: 180px;
+    padding: 20px 18px;
     border-radius: 22px;
   }
 
@@ -709,28 +835,34 @@ button:focus-visible {
   }
 
   .widget-desc {
-    font-size: 19px;
+    font-size: 18px;
   }
 
   .section-title {
-    margin-top: 30px;
-    font-size: 19px;
+    margin-top: 22px;
+    font-size: 18px;
   }
 
+  /* 폭이 좁아 항목을 한 줄에 두면 글자가 잘리므로 이때만 세로로 쌓는다 */
   .weather-detail-card {
-    padding: 16px;
+    grid-template-columns: 1fr;
+    padding: 12px;
     border-radius: 18px;
   }
 
+  .wind-section .weather-detail-card {
+    flex-direction: column;
+  }
+
   .weather-detail-card p {
-    min-height: 50px;
-    padding: 0 13px;
+    min-height: 86px;
+    padding: 10px 13px;
     font-size: 14px;
   }
 
   button {
     width: 100%;
-    margin-top: 34px;
+    margin-top: 24px;
   }
 }
 </style>

@@ -1,5 +1,6 @@
 <script setup>
 import { useRouter } from 'vue-router'
+import DashboardNav from '../components/exercise/DashboardNav.vue'
 
 const router = useRouter()
 
@@ -12,6 +13,9 @@ const goDashboard = () => {
 
 <template>
   <main class="about-page">
+    <!--대시보드 네비게이션 (홈과 같은 위치/크기로 보이도록 최상단에 배치) -->
+    <DashboardNav />
+
     <section class="hero-section">
       <div class="hero-badge">Weather Dashboard</div>
 
@@ -80,7 +84,8 @@ const goDashboard = () => {
 <style scoped>
 .about-page {
   min-height: 100vh;
-  padding: 60px 20px;
+  /* 위쪽 여백은 홈(.weather-container)과 맞춰 내비가 같은 높이에 오게 한다 */
+  padding: 20px 20px 60px;
   box-sizing: border-box;
   background:
     radial-gradient(circle at top left, rgba(221, 214, 254, 0.8), transparent 35%),
@@ -247,7 +252,7 @@ const goDashboard = () => {
 
 @media (max-width: 768px) {
   .about-page {
-    padding: 30px 16px;
+    padding: 20px 16px 30px;
   }
   .hero-section {
     padding: 42px 24px;

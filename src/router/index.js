@@ -1,6 +1,27 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import WeatherHomeView from '@/views/WeatherHomeView.vue'
 
+// 뒤로/앞으로 이동 직후에는 데이터 로딩이 끝나기 전이라 페이지가 짧아서 스크롤 복원이 실패한다
+// 복원할 위치까지 스크롤할 수 있을 만큼 콘텐츠가 채워질 때까지 기다린다 (최대 3초)
+const waitForScrollHeight = (top, timeout = 3000) => {
+  return new Promise((resolve) => {
+    const startedAt = Date.now()
+
+    const check = () => {
+      const scrollableHeight = document.documentElement.scrollHeight - window.innerHeight
+
+      if (scrollableHeight >= top || Date.now() - startedAt > timeout) {
+        resolve()
+        return
+      }
+
+      requestAnimationFrame(check)
+    }
+
+    check()
+  })
+}
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -53,6 +74,19 @@ const router = createRouter({
       component: () => import('../views/NotFoundView.vue'),
     },
   ],
+  // 페이지 이동 시 항상 최상단(navBar)부터 보이도록
+  // 단, 뒤로/앞으로 가기는 이전에 보던 위치를 복원한다
+  // 첫 진입/새로고침은 from이 시작 위치(from.name === undefined)라
+  // savedPosition이 있어도 무시하고 최상단으로 보낸다
+  async scrollBehavior(to, from, savedPosition) {
+    if (savedPosition && from.name !== undefined) {
+      await waitForScrollHeight(savedPosition.top)
+
+      return savedPosition
+    }
+
+    return { top: 0 }
+  },
 })
 
 export default router

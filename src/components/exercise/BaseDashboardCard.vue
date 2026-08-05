@@ -13,7 +13,7 @@
 .dashboard-card {
   width: 100%;
   max-width: 800px;
-  padding: 10px;
+  padding: 13px;
   box-sizing: border-box;
   margin-bottom: 20px;
   background: linear-gradient(135deg, #e5dfff 0%, #dad2fa 55%, #d4c8ff 100%);
@@ -24,7 +24,7 @@
 
 @media (max-width: 600px) {
   .dashboard-card {
-    padding: 8px;
+    padding: 10px;
     margin-bottom: 14px;
     border-radius: 8px;
   }

@@ -92,6 +92,7 @@ defineProps({
   position: relative;
   width: 240px;
   height: 120px;
+  flex-shrink: 0; /* flex 컨테이너 안에서 240px를 유지 (남는 폭은 SearchBar가 가져간다) */
   margin: 0 auto;
   align-self: center;
   overflow: hidden;

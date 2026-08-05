@@ -67,9 +67,9 @@ const unitSymbol = computed(() => {
 // 기준 온도 25°C를 현재 단위로 변환(더움 기준 표시 온도 변화하기 위해)
 const standardTemp = computed(() => {
   if (configStore.unit === 'fahrenheit') {
-    return 77
+    return 80
   }
-  return 25
+  return 28
 })
 </script>
 
@@ -101,7 +101,7 @@ const standardTemp = computed(() => {
 
     <p>현재기온: {{ displayTemp }}{{ unitSymbol }}</p>
 
-    <p v-if="city.temp < 25" class="cool-temperature-badge">
+    <p v-if="city.temp < 28" class="cool-temperature-badge">
       <FontAwesomeIcon
         :icon="faTemperatureArrowDown"
         style="color: rgb(61, 77, 247); margin-right: 5px"
@@ -208,9 +208,10 @@ const standardTemp = computed(() => {
   height: 30px;
   margin-top: 10px;
 
-  border: 1px solid lightgray;
+  border: 1px solid #e7cdfc;
   border-radius: 10px;
-  background-color: rgb(215, 215, 253);
+  background: linear-gradient(135deg, #efe1ff, #ddd6ff);
+  /* background-color: rgb(215, 215, 253); */
   font-weight: bold;
 
   transition:
@@ -219,7 +220,8 @@ const standardTemp = computed(() => {
     box-shadow 0.2s ease;
 }
 .detail-btn:hover {
-  background-color: rgb(180, 180, 245);
+  border: 1px solid #d5c1e5;
+  /* background-color: rgb(180, 180, 245); */
   transform: translateY(-2px);
   box-shadow: 0 4px 10px rgba(80, 80, 150, 0.2);
 }

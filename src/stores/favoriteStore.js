@@ -1,21 +1,20 @@
 import { defineStore } from 'pinia'
 
 // 즐겨찾기 도시를 전역으로 보관하는 스토어
-// state / getters / actions 세 칸을 명시적으로 나누기 위해 Options 스타일로 작성한다
 export const useFavoriteStore = defineStore('favorite', {
-  // ===== state =====
+  // state
   state: () => ({
-    // 식별 정보(id, name, lat, lon)만 저장한다.
-    // 온도/날씨 상태는 시간이 지나면 낡기 때문에, 화면에 뿌릴 때 좌표로 다시 조회한다.
+    // 식별 정보(id, name, lat, lon)만 저장 -> 해당 정보를 바탕으로 조회시 api 재조회
     favorites: [],
   }),
 
-  // ===== getters =====
+  // getters
+  // 저장한 정보 조회하기
   getters: {
     // 즐겨찾기 개수
     favoriteCount: (state) => state.favorites.length,
 
-    // 즐겨찾기가 하나라도 있는지
+    // 즐겨찾기 존재 여부
     hasFavorite: (state) => state.favorites.length > 0,
 
     // 특정 도시가 즐겨찾기에 있는지 (인자를 받아야 하므로 함수를 반환하는 getter)
@@ -24,7 +23,7 @@ export const useFavoriteStore = defineStore('favorite', {
     },
   },
 
-  // ===== actions =====
+  // action
   actions: {
     // 즐겨찾기 추가 (이미 있으면 중복 추가하지 않음)
     addFavorite(city) {
