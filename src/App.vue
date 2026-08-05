@@ -38,11 +38,6 @@ const homeResetStore = useHomeResetStore()
           <span class="nav-number">03</span>
           <span>3일차 실습</span>
         </RouterLink>
-
-        <RouterLink to="/day4" class="nav-link">
-          <span class="nav-number">04</span>
-          <span>4일차 실습</span>
-        </RouterLink>
       </nav>
     </header>
 
