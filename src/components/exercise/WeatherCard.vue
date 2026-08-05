@@ -142,6 +142,7 @@ const standardTemp = computed(() => {
 /* 선택된 카드 */
 .weatherCard.selected {
   border: 1px solid;
+  background-color: #f6f4ff;
   border-color: rgb(85, 85, 230);
   box-shadow: 0 0 0 3px rgba(85, 85, 230, 0.15);
 }
