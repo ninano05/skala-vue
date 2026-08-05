@@ -1,15 +1,29 @@
 <!--2일차 실습 View-->
 <script setup>
-// import ComputedBasic from '../components/practice/composition/ComputedBasic.vue'
-// import ReactiveRef from '../components/practice/composition/ReactiveRef.vue'
+import ComputedBasic from '../components/practice/composition/ComputedBasic.vue'
+import ReactiveRef from '../components/practice/composition/ReactiveRef.vue'
+import ReactiveReactive from '@/components/practice/composition/ReactiveReactive.vue'
 
-// import LifecycleChild from '../components/practice/component/LifecycleChild.vue'
-// import LifecycleParent from '../components/practice/component/LifecycleParent.vue'
+import LifecycleChild from '../components/practice/component/LifecycleChild.vue'
+import LifecycleParent from '../components/practice/component/LifecycleParent.vue'
+
+import WatchersBasic from '@/components/practice/composition/WatchersBasic.vue'
+import WatchersDeep from '@/components/practice/composition/WatchersDeep.vue'
+import WatchersMulti from '@/components/practice/composition/WatchersMulti.vue'
+import WatchersReactive from '@/components/practice/composition/WatchersReactive.vue'
+import WatchersReactiveArray from '@/components/practice/composition/WatchersReactiveArray.vue'
+import WatchersRefArray from '@/components/practice/composition/WatchersRefArray.vue'
+import WatchersWatchEffect from '@/components/practice/composition/WatchersWatchEffect.vue'
+
+import PropsEmitsParent from '@/components/practice/component/PropsEmitsParent.vue'
+import SlotDefaultParent from '@/components/practice/component/SlotDefaultParent.vue'
+import SlotNamedParent from '@/components/practice/component/SlotNamedParent.vue'
+import SlotScopedParent from '@/components/practice/component/SlotScopedParent.vue'
 </script>
 
 <template>
   <div class="practice-container">
-    <!-- <h1>1. Reactive State</h1>
+    <h1>1. Reactive State</h1>
     <hr />
     <ReactiveRef />
     <ReactiveReactive />
@@ -26,6 +40,7 @@
     <h1>3. Component Lifecycle</h1>
     <hr />
     <LifecycleParent />
+    <LifecycleChild />
     <h1>4. Props & Emits</h1>
     <hr />
     <PropsEmitsParent />
@@ -33,7 +48,7 @@
     <hr />
     <SlotDefaultParent />
     <SlotNamedParent />
-    <SlotScopedParent /> -->
+    <SlotScopedParent />
   </div>
 </template>
 

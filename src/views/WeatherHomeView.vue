@@ -527,6 +527,7 @@ body {
   padding-left: 10px;
   padding-right: 10px;
   padding-bottom: 5px;
+  gap: 10px;
 }
 
 /* 상태 바 내부 레이아웃 */
