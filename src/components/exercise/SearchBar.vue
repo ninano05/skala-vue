@@ -64,8 +64,18 @@ const closeList = () => {
   activeIndex.value = -1
 }
 
+// 같은 검색어로 중복 실행하지 않도록 마지막으로 검색(또는 선택)한 값을 기억한다
+let lastSearchedKeyword = ''
+
+const runSearch = () => {
+  lastSearchedKeyword = props.keyword.trim()
+  blurOnTouchDevice()
+  emit('search-city')
+}
+
 const select = (city) => {
   closeList()
+  lastSearchedKeyword = city.name
   blurOnTouchDevice()
   emit('select-suggestion', city)
 }
@@ -83,6 +93,14 @@ const onFocus = () => {
 // 목록 위에서 누른 경우엔 mousedown.prevent 덕분에 blur가 발생하지 않으므로 여기서 닫아도 안전하다
 const onBlur = () => {
   closeList()
+
+  // iOS 키보드의 '완료(체크)' 버튼은 Enter 이벤트 없이 포커스만 해제하므로
+  // 아직 검색하지 않은 검색어가 남아 있으면 여기서 검색을 실행한다
+  const keyword = props.keyword.trim()
+
+  if (keyword !== '' && keyword !== lastSearchedKeyword) {
+    runSearch()
+  }
 }
 
 const onKeydown = (event) => {
@@ -94,8 +112,7 @@ const onKeydown = (event) => {
   // 목록이 닫혀 있거나 후보가 없으면 기존 Enter 검색 동작을 그대로 사용한다
   if (!isOpen.value || props.suggestions.length === 0) {
     if (event.key === 'Enter') {
-      blurOnTouchDevice()
-      emit('search-city')
+      runSearch()
     }
     return
   }
@@ -124,8 +141,7 @@ const onKeydown = (event) => {
     }
 
     closeList()
-    blurOnTouchDevice()
-    emit('search-city')
+    runSearch()
   }
 }
 </script>
